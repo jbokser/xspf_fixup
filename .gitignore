@@ -1,0 +1,7 @@
+__pycache__
+*.pyc
+.vscode
+build/
+xspf_fixup.egg-info/
+dist/
+venv/
