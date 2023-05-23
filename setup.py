@@ -39,7 +39,7 @@ setup(
     packages=find_packages(),
     author='Juan S. Bokser',
     author_email='juan.bokser@gmail.com',
-    description='Simple program that shows the BTC price taken from the Money on Chain API Rest',
+    description='A simple command line program to fix playlist (.xspf files) with broken links.',
     long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[

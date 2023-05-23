@@ -190,7 +190,7 @@ class Playlist():
 @argument('command', type=Choice(['show', 'preview', 'fix']))
 @argument('filename', type=TypePath(exists=True))
 def cli(command, filename, show_version=False):
-    """Simple program"""
+    """A simple command line program to fix playlist (.xspf files) with broken links."""
 
     if show_version:
         print(version)
