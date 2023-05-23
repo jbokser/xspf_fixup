@@ -5,3 +5,4 @@ build/
 xspf_fixup.egg-info/
 dist/
 venv/
+.venv/
