@@ -211,7 +211,9 @@ class Playlist():
         return self.soup.prettify()
 
 
-    def dump_to_file(self, filename):
+    def dump_to_file(self, filename=None):
+        if filename is None:
+            filename = self.filename
         with open(filename, "w") as file:
             print(self, file=file)
 
@@ -245,7 +247,7 @@ def cli(command, filename, show_version=False):
     if command=='preview':
         return
 
-    pl.dump_to_file(filename)
+    pl.dump_to_file()
 
 
 
