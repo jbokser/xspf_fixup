@@ -79,4 +79,10 @@ user@host:~/tmp/xspf_fixup/examples$
 
 ## Why? (The rationale behind this)
 
-Mainly used by me to fix the `.xspf` files that *Luis "la cosa muerta" Musa* gave me.
+Mainly used by [me](#author) to fix the `.xspf` files that *Luis "la cosa muerta" Musa* gave me.
+
+
+
+## Author
+
+Juan S. Bokser <juan.bokser@gmail.com>
