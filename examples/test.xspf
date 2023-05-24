@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<playlist version="1" xmlns="http://xspf.org/ns/0/" xmlns:vlc="http://www.videolan.org/vlc/playlist/ns/0/">
+ <title>
+  Lista de reproducción
+ </title>
+ <trackList>
+  <track>
+   <title>
+    Rockland Agus
+   </title>
+   <location>
+    videos/Rockland%20Agus.mp4
+   </location>
+   <duration>
+    181915
+   </duration>
+   <extension application="http://www.videolan.org/vlc/playlist/0">
+    <vlc:id>
+     0
+    </vlc:id>
+   </extension>
+  </track>
+  <track>
+   <title>
+    Honky Tonk Way
+   </title>
+   <location>
+    videos/Honky%20Tonk%20Way.mp4
+   </location>
+   <duration>
+    246040
+   </duration>
+   <extension application="http://www.videolan.org/vlc/playlist/0">
+    <vlc:id>
+     1
+    </vlc:id>
+   </extension>
+  </track>
+  <track>
+   <title>
+    Forge Ahead Agos
+   </title>
+   <location>
+    videos/Forge%20Ahead%20Agos.mp4
+   </location>
+   <duration>
+    204800
+   </duration>
+   <extension application="http://www.videolan.org/vlc/playlist/0">
+    <vlc:id>
+     2
+    </vlc:id>
+   </extension>
+  </track>
+ </trackList>
+ <extension application="http://www.videolan.org/vlc/playlist/0">
+  <vlc:item tid="0"/>
+  <vlc:item tid="1"/>
+  <vlc:item tid="2"/>
+ </extension>
+</playlist>
