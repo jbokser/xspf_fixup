@@ -4,11 +4,25 @@ from click import Path as TypePath
 from bs4 import BeautifulSoup as BS
 from urllib.parse import unquote, quote
 from pathlib import Path
-from os import sep as dirsep
+from os import chdir
 from tabulate import tabulate
 from datetime import timedelta
+from contextlib import contextmanager
+
 
 version='0.9b'
+
+
+
+@contextmanager
+def working_directory(path):
+    """Changes working directory and returns to previous on exit."""
+    prev_cwd = Path.cwd()
+    chdir(path)
+    try:
+        yield
+    finally:
+        chdir(prev_cwd)
 
 
 
@@ -18,12 +32,11 @@ class Playlist():
     def __init__(self, filename):
 
         self.filename = filename
-        
         content = []
 
         with open(filename, "r") as file:
             content = file.readlines()
-        
+
         content = "".join(content)
         self.soup = BS(content, features="xml")
 
@@ -55,28 +68,26 @@ class Playlist():
             if track.title:
                 if not rewrite_all:
                     new_title = track.title.string
-                track.title.extract()                
+                track.title.extract()
             track.insert(0, self.soup.new_tag('title'))
             track.title.string = new_title
         return self.get_summary()
 
 
     def fix_location(self, try_relative_to=True, search_in='.'):
+
         results = {}
-        
+
         relative_to = Path(self.filename).absolute().parent
 
         for track in self.get_tracks():
+
             filepath = self.make_filepath(track)
 
             result = 'Ok'
-            
-            ok = filepath.is_file() and filepath.exists()
 
-            if ok and not filepath.is_absolute():
-                p = Path(str(relative_to) + dirsep + str(filepath))
-                print(p)
-                ok = p.is_file() and p.exists()
+            with working_directory(relative_to):
+                ok = filepath.is_file() and filepath.exists()
 
             if not ok :
                 result = 'Not Found'
@@ -86,16 +97,24 @@ class Playlist():
                     option = options[0]
                     new_location = option.absolute()
                     if try_relative_to:
-                        try:
-                            new_location = option.relative_to(relative_to)
-                        except ValueError:
-                            pass
+                        new_location_lst = list(new_location.parts)
+                        relative_to_lst = list(relative_to.parts)
+                        while new_location_lst and relative_to_lst:
+                            if new_location_lst[0]==relative_to_lst[0]:
+                                new_location_lst.pop(0)
+                                relative_to_lst.pop(0)
+                            else:
+                                break
+                        new_location_lst = ['..' for x in relative_to_lst] + new_location_lst
+                        new_location = Path(*new_location_lst)
                     new_location = quote(str(new_location))
                     track.location.string = new_location
             results[track.location.string] = result
         summary = self.get_summary()
+
         for t in summary:
             t['result'] = results[t['location']]
+
         return summary
 
 
@@ -150,7 +169,7 @@ class Playlist():
         for k in set(keys).difference(set(keys_from_summary)):
             i = keys.index(k)
             keys.pop(i)
-            headers.pop(i)      
+            headers.pop(i)
 
         table = []
         total_duration = timedelta(0)
@@ -167,7 +186,7 @@ class Playlist():
                 if key=='duration':
                     if value:
                         total_duration += value
-                        value = cls.timedelta_to_string(value)                    
+                        value = cls.timedelta_to_string(value)
                     else:
                         value = 'N/A'
                 if key=='title':
@@ -209,12 +228,12 @@ def cli(command, filename, show_version=False):
     if show_version:
         print(version)
         return
-    
+
     try:
         pl = Playlist(filename)
     except ValueError as e:
         raise ClickException(str(e))
-    
+
     if command=='show':
         print(pl.make_pretty_summary(pl.get_summary()))
         return
@@ -222,13 +241,13 @@ def cli(command, filename, show_version=False):
     pl.fix_titles()
     summary = pl.fix_location()
     print(pl.make_pretty_summary(summary))
-    
+
     if command=='preview':
         return
-    
+
     pl.dump_to_file(filename)
 
 
-    
+
 if __name__ == '__main__':
     cli()
