@@ -16,6 +16,8 @@ class Playlist():
 
 
     def __init__(self, filename):
+
+        self.filename = filename
         
         content = []
 
@@ -59,14 +61,26 @@ class Playlist():
         return self.get_summary()
 
 
-    def fix_location(self, try_relative_to=True, relative_to='.', search_in='.'):
+    def fix_location(self, try_relative_to=True, search_in='.'):
         results = {}
+        
+        relative_to = Path(self.filename).absolute().parent
+
         for track in self.get_tracks():
             filepath = self.make_filepath(track)
+
             result = 'Ok'
-            if not filepath.is_file():
+            
+            ok = filepath.is_file() and filepath.exists()
+
+            if ok and not filepath.is_absolute():
+                p = Path(str(relative_to) + dirsep + str(filepath))
+                print(p)
+                ok = p.is_file() and p.exists()
+
+            if not ok :
                 result = 'Not Found'
-                options = list(Path(search_in).glob('*' + dirsep + filepath.name.strip()))
+                options = list(Path(search_in).rglob(filepath.name.strip()))
                 if options:
                     result = 'Fixed'
                     option = options[0]
