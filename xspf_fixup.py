@@ -10,7 +10,7 @@ from datetime import timedelta
 from contextlib import contextmanager
 
 
-version='0.9.1'
+version='0.9.2b0'
 
 
 
