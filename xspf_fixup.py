@@ -10,7 +10,7 @@ from datetime import timedelta
 from contextlib import contextmanager
 
 
-version='0.9b0'
+version='0.9.1'
 
 
 
@@ -208,7 +208,11 @@ class Playlist():
 
 
     def __str__(self):
-        return self.soup.prettify()
+        out = self.soup.prettify()
+        # FIXME! I need to find a better prettify() 
+        out = out.replace("<location>\n    ", "<location>")
+        out = out.replace("\n   </location>", "</location>")
+        return out
 
 
     def dump_to_file(self, filename=None):
