@@ -10,7 +10,7 @@ from datetime import timedelta
 from contextlib import contextmanager
 
 
-version='0.9.2b0'
+version='0.9.2b1'
 
 
 
@@ -208,11 +208,32 @@ class Playlist():
 
 
     def __str__(self):
-        out = self.soup.prettify()
-        # FIXME! I need to find a better prettify() 
-        out = out.replace("<location>\n    ", "<location>")
-        out = out.replace("\n   </location>", "</location>")
-        return out
+
+        out = self.soup.prettify() #FIXME
+
+        # I need to find a better prettify()
+        new_lines = []
+        lines = out.split('\n')
+        fnc_is_tag = lambda s: s.strip().startswith('<')
+        max_i = len(lines) - 1
+        for i, l in enumerate(lines):
+            
+            prev_is_tag = fnc_is_tag(lines[i-1]) if i>0 else True
+            next_is_tag = fnc_is_tag(lines[i+1]) if i<max_i else True
+            is_tag = fnc_is_tag(l)
+
+            if not is_tag and (next_is_tag or prev_is_tag):
+                new_lines.append(l.strip())
+            elif is_tag and not prev_is_tag:
+                new_lines.append(l.strip())
+                new_lines.append('\n')
+            elif is_tag and not next_is_tag:
+                new_lines.append(l)
+            else:
+                new_lines.append(l)
+                new_lines.append('\n')
+
+        return ''.join(new_lines)
 
 
     def dump_to_file(self, filename=None):
