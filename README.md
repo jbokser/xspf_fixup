@@ -53,15 +53,18 @@ $ pip3 install .
 
 ```shell
 user@host:~/tmp/xspf_fixup/examples$ xspf_fixup --help
-Usage: xspf_fixup.py [OPTIONS] [FILES]...
+Usage: xspf_fixup [OPTIONS] [FILES]...
 
   A simple command line program to fix playlist (.xspf files) with broken
   links.
+
+  For more info: (https://github.com/jbokser/xspf_fixup).
 
 Options:
   -v, --version    Show version and exit.
   -s, --show       Show .xspf file info and exit.
   -o, --overwrite  Overwrite the .xspf file.
+  -r, --report     Make a report in markdown for each .xspf file.
   -h, --help       Show this message and exit.
 user@host:~/tmp/xspf_fixup/examples$ xspf_fixup -o ./test.xspf 
 

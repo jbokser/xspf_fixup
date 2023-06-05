@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from warnings import filterwarnings
 
 
-version='0.9.2'
+version='0.9.3b0'
 
 
 
@@ -162,7 +162,8 @@ class Playlist():
                             headers = ['Title', 'Duration', 'Location', 'Result'],
                             keys = ['title', 'duration', 'location', 'result'],
                             more_headers = [],
-                            more_keys=[]):
+                            more_keys=[],
+                            markdown=False):
 
         headers += more_headers
         keys += more_keys
@@ -203,11 +204,15 @@ class Playlist():
 
         out = []
         out.append("")
-        out.append(tabulate(table, headers=headers))
+        out.append(tabulate(table, headers=headers, tablefmt=("github" if markdown else "simple")))
         out.append("")
         results = ', '.join([f"{k}: {v}" for k, v in results.items()])
+        if markdown:
+            out.append("```")
         out.append(f"Tracks count: ..... {len(table)}{' (' if results else ''}{results}{')' if results else ''}")
         out.append(f"Total duration: ... {cls.timedelta_to_string(total_duration)}")
+        if markdown:
+            out.append("```")
         out.append("")
 
         return '\n'.join(out)
@@ -249,6 +254,42 @@ class Playlist():
             print(self, file=file)
 
 
+    def make_report_file(self, filename=None, markdown=True):
+        
+        if filename is None:
+            filename = self.filename
+
+        file_path = Path(filename)
+        directory_path = file_path.parent
+        file_name_without_extension = file_path.stem
+
+        filename = directory_path.joinpath(
+            file_name_without_extension + ('.md' if markdown else '.txt'))
+
+        summary = self.get_summary()
+        str_report = self.make_pretty_summary(summary, markdown=markdown)
+      
+        with open(filename, "w") as file:
+
+            if markdown:
+                print(f'# {file_name_without_extension}', file=file)
+            else:
+                title = file_name_without_extension.strip().split()
+                print(' '.join(title), file=file)
+                print(' '.join([('=' * len(t)) for t in title]), file=file)
+
+            print(str_report, file=file)
+
+            print('---', file=file)
+            if markdown:
+                print(f'Report generated with [`xspf_fixup` (v{version})](https://github.com/jbokser/xspf_fixup).', file=file)
+            else:
+                print(f'Report generated with xspf_fixup v{version} (https://github.com/jbokser/xspf_fixup).', file=file)
+            print('', file=file)
+    
+        return(filename)
+
+            
 
 @command(context_settings=dict(help_option_names=['-h', '--help']))
 @option('-v', '--version', 'show_version', is_flag=True,
@@ -257,9 +298,13 @@ class Playlist():
     help='Show .xspf file info and exit.')
 @option('-o', '--overwrite', 'overwrite', is_flag=True,
     help='Overwrite the .xspf file.')
+@option('-r', '--report', 'report', is_flag=True,
+    help='Make a report in markdown for each .xspf file.')
 @argument('files', nargs=-1, type=TypePath())
-def cli(files, show_version=False, show=False, overwrite=False):
-    """A simple command line program to fix playlist (.xspf files) with broken links."""
+def cli(files, show_version=False, show=False, overwrite=False, report=False):
+    """A simple command line program to fix playlist (.xspf files) with broken links.
+    
+    For more info: (https://github.com/jbokser/xspf_fixup)."""
 
     if show_version:
         print(version)
@@ -288,11 +333,17 @@ def cli(files, show_version=False, show=False, overwrite=False):
                 print(f"File: {filename}")
                 print('======' + ('=' * len(filename)))
 
+            if report:
+                report_file = pl.make_report_file()
+                print(f'File: {report_file}')
+
             if show:
                 summary = pl.get_summary()
                 for d in [x['duration'] for x in summary]:
                     duration += d
                 print(pl.make_pretty_summary(summary))
+
+            if show or report:
                 continue
 
             pl.fix_titles()
