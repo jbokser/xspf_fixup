@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from warnings import filterwarnings
 
 
-version='0.9.2b2'
+version='0.9.2'
 
 
 
