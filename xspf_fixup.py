@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from warnings import filterwarnings
 
 
-version='0.9.3b1'
+version='0.9.3b2'
 
 
 
@@ -204,7 +204,7 @@ class Playlist():
 
         out = []
         out.append("")
-        out.append(tabulate(table, headers=headers, tablefmt=("github" if markdown else "simple")))
+        out.append(tabulate(table, headers=['#'] + headers, showindex=range(1, len(table)+1), tablefmt=("github" if markdown else "simple")))
         out.append("")
         results = ', '.join([f"{k}: {v}" for k, v in results.items()])
         if markdown:

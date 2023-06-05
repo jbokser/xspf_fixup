@@ -68,11 +68,11 @@ Options:
   -h, --help       Show this message and exit.
 user@host:~/tmp/xspf_fixup/examples$ xspf_fixup -o ./test.xspf 
 
-Title             Duration    Location                     Result
-----------------  ----------  ---------------------------  --------
-Rockland Agus     03:01       videos/Rockland Agus.mp4     Fixed
-Honky Tonk Way    04:06       videos/Honky Tonk Way.mp4    Fixed
-Forge Ahead Agos  03:24       videos/Forge Ahead Agos.mp4  Fixed
+   Title             Duration    Location                     Result
+-- ----------------  ----------  ---------------------------  --------
+ 1 Rockland Agus     03:01       videos/Rockland Agus.mp4     Fixed
+ 2 Honky Tonk Way    04:06       videos/Honky Tonk Way.mp4    Fixed
+ 3 Forge Ahead Agos  03:24       videos/Forge Ahead Agos.mp4  Fixed
 
 Tracks count: ..... 3 (Fixed: 3)
 Total duration: ... 10:32
