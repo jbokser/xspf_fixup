@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from warnings import filterwarnings
 
 
-version='0.9.3b0'
+version='0.9.3b1'
 
 
 
@@ -272,9 +272,10 @@ class Playlist():
         with open(filename, "w") as file:
 
             if markdown:
-                print(f'# {file_name_without_extension}', file=file)
+                print(f'# Playlist: {file_name_without_extension}', file=file)
+                print('', file=file)
             else:
-                title = file_name_without_extension.strip().split()
+                title = ('Playlist: ' + str(file_name_without_extension)).strip().split()
                 print(' '.join(title), file=file)
                 print(' '.join([('=' * len(t)) for t in title]), file=file)
 
@@ -329,19 +330,23 @@ def cli(files, show_version=False, show=False, overwrite=False, report=False):
         if ok:
             found = True
 
-            if len(filename_list)>1:
+            if len(filename_list)>1 and show:
                 print(f"File: {filename}")
                 print('======' + ('=' * len(filename)))
 
             if report:
                 report_file = pl.make_report_file()
-                print(f'File: {report_file}')
 
             if show:
                 summary = pl.get_summary()
                 for d in [x['duration'] for x in summary]:
                     duration += d
                 print(pl.make_pretty_summary(summary))
+
+            if report:
+                print(f'Report file: {report_file}')
+                if len(filename_list)>1 and show:
+                    print('')
 
             if show or report:
                 continue
