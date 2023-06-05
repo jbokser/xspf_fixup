@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from click import command, option, argument, ClickException, Choice
+from click import command, option, argument, ClickException, BadParameter
 from click import Path as TypePath
 from bs4 import BeautifulSoup as BS
 from urllib.parse import unquote, quote
@@ -8,9 +8,15 @@ from os import chdir
 from tabulate import tabulate
 from datetime import timedelta
 from contextlib import contextmanager
+from warnings import filterwarnings
 
 
-version='0.9.1'
+version='0.9.2'
+
+
+
+# Filter BeautifulSoup warnings
+filterwarnings("ignore", category=UserWarning)
 
 
 
@@ -208,11 +214,32 @@ class Playlist():
 
 
     def __str__(self):
-        out = self.soup.prettify()
-        # FIXME! I need to find a better prettify() 
-        out = out.replace("<location>\n    ", "<location>")
-        out = out.replace("\n   </location>", "</location>")
-        return out
+
+        out = self.soup.prettify() #FIXME
+
+        # I need to find a better prettify()
+        new_lines = []
+        lines = out.split('\n')
+        fnc_is_tag = lambda s: s.strip().startswith('<')
+        max_i = len(lines) - 1
+        for i, l in enumerate(lines):
+            
+            prev_is_tag = fnc_is_tag(lines[i-1]) if i>0 else True
+            next_is_tag = fnc_is_tag(lines[i+1]) if i<max_i else True
+            is_tag = fnc_is_tag(l)
+
+            if not is_tag and (next_is_tag or prev_is_tag):
+                new_lines.append(l.strip())
+            elif is_tag and not prev_is_tag:
+                new_lines.append(l.strip())
+                new_lines.append('\n')
+            elif is_tag and not next_is_tag:
+                new_lines.append(l)
+            else:
+                new_lines.append(l)
+                new_lines.append('\n')
+
+        return ''.join(new_lines)
 
 
     def dump_to_file(self, filename=None):
@@ -225,33 +252,65 @@ class Playlist():
 
 @command(context_settings=dict(help_option_names=['-h', '--help']))
 @option('-v', '--version', 'show_version', is_flag=True,
-    help='Show version and exit')
-@argument('command', type=Choice(['show', 'preview', 'fix']))
-@argument('filename', type=TypePath(exists=True))
-def cli(command, filename, show_version=False):
+    help='Show version and exit.')
+@option('-s', '--show', 'show', is_flag=True,
+    help='Show .xspf file info and exit.')
+@option('-o', '--overwrite', 'overwrite', is_flag=True,
+    help='Overwrite the .xspf file.')
+@argument('files', nargs=-1, type=TypePath())
+def cli(files, show_version=False, show=False, overwrite=False):
     """A simple command line program to fix playlist (.xspf files) with broken links."""
 
     if show_version:
         print(version)
         return
 
-    try:
-        pl = Playlist(filename)
-    except ValueError as e:
-        raise ClickException(str(e))
+    if not files:
+        raise BadParameter('It is necessary to pass at least one file.')
 
-    if command=='show':
-        print(pl.make_pretty_summary(pl.get_summary()))
-        return
+    filename_list = [f for f in files if Path(f).is_file()]
 
-    pl.fix_titles()
-    summary = pl.fix_location()
-    print(pl.make_pretty_summary(summary))
+    if not filename_list:
+        raise ClickException('No file found.')
+    
+    found = False
+    duration = timedelta(0)
+    for filename in filename_list:
+        ok = True
+        try:
+            pl = Playlist(filename)
+        except ValueError as e:
+            ok = False
+        if ok:
+            found = True
 
-    if command=='preview':
-        return
+            if len(filename_list)>1:
+                print(f"File: {filename}")
+                print('======' + ('=' * len(filename)))
 
-    pl.dump_to_file()
+            if show:
+                summary = pl.get_summary()
+                for d in [x['duration'] for x in summary]:
+                    duration += d
+                print(pl.make_pretty_summary(summary))
+                continue
+
+            pl.fix_titles()
+            summary = pl.fix_location()
+            for d in [x['duration'] for x in summary]:
+                duration += d
+            print(pl.make_pretty_summary(summary))
+
+            if overwrite:
+                pl.dump_to_file()
+
+    if not found:
+        raise ClickException('No file found.')
+
+    if duration and len(filename_list)>1:
+        print(f"Number of files: ............... {len(filename_list)}")
+        print(f"Total duration of all files: ... {Playlist.timedelta_to_string(duration)}")
+        print('')
 
 
 
