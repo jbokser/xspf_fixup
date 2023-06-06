@@ -9,15 +9,18 @@ from tabulate import tabulate
 from datetime import timedelta
 from contextlib import contextmanager
 from warnings import filterwarnings
+from collections import namedtuple
 
 
-version='0.9.3b3'
+version='0.9.3b4'
 
 
 
 # Filter BeautifulSoup warnings
 filterwarnings("ignore", category=UserWarning)
 
+
+Filename = namedtuple('Filename', ['path', 'ok', 'status'])
 
 
 @contextmanager
@@ -57,6 +60,52 @@ class Playlist():
                 yield(track)
 
 
+    def add_track(self, filename):
+
+        filename = self.fix_filename(filename)
+
+        if filename.ok:
+
+            track_list = self.soup.find('trackList')
+            if track_list:
+                try:
+                    vlc_id = max([int(v.text) for v in track_list.find_all('vlc:id')])+1
+                except:
+                    vlc_id = len(track_list.find_all('track'))
+
+                new_track = self.soup.new_tag('track')
+
+                new_track_title = self.soup.new_tag('title')
+                new_track_title.string = ' '.join(filename.path.stem.split())
+                new_track.append(new_track_title)
+
+                new_track_location = self.soup.new_tag('location')
+                new_track_location.string = quote(str(filename.path))
+                new_track.append(new_track_location)
+
+                #new_track_duration = self.soup.new_tag('duration')
+                #new_track_duration.string = 'DURATION'
+                #new_track.append(new_track_duration)
+
+                new_track_extension = self.soup.new_tag('extension')
+                new_track_extension["application"] = "http://www.videolan.org/vlc/playlist/0"
+                new_track_extension_vlc_id = self.soup.new_tag('vlc:id')
+                new_track_extension_vlc_id.string = str(vlc_id)
+                new_track_extension.append(new_track_extension_vlc_id)
+                new_track.append(new_track_extension)
+
+                track_list.append(new_track)
+
+                pl = self.soup.find('playlist')
+                if pl:
+                    e = pl.find('extension', recursive=False)
+                    if e:
+                        t = self.soup.new_tag('vlc:item', tid=str(vlc_id))
+                        e.append(t)
+
+        return filename
+
+
     @staticmethod
     def make_filepath(track):
         return Path(unquote(track.location.string.strip()))
@@ -80,42 +129,54 @@ class Playlist():
         return self.get_summary()
 
 
+    def fix_filename(self, filename, try_relative_to=True, search_in='.'):
+
+        relative_to = Path(self.filename).absolute().parent
+
+        filepath = Path(filename)
+        status = 'Ok'
+
+        with working_directory(relative_to):
+            ok = filepath.is_file() and filepath.exists()
+
+        if not ok :
+            status = 'Not Found'
+            options = list(Path(search_in).rglob(filepath.name.strip()))
+            filepath = None
+            if options:
+                status = 'Fixed'
+                ok = True
+                option = options[0]
+                filepath = option.absolute()
+                if try_relative_to:
+                    location_lst = list(filepath.parts)
+                    relative_to_lst = list(relative_to.parts)
+                    while location_lst and relative_to_lst:
+                        if location_lst[0]==relative_to_lst[0]:
+                            location_lst.pop(0)
+                            relative_to_lst.pop(0)
+                        else:
+                            break
+                    location_lst = ['..' for x in relative_to_lst] + location_lst
+                    filepath = Path(*location_lst)
+        
+        return Filename(filepath, ok, status)
+    
+
     def fix_location(self, try_relative_to=True, search_in='.'):
 
         results = {}
 
-        relative_to = Path(self.filename).absolute().parent
-
         for track in self.get_tracks():
 
-            filepath = self.make_filepath(track)
+            filename = self.fix_filename(self.make_filepath(track),
+                try_relative_to=try_relative_to, search_in=search_in)
 
-            result = 'Ok'
+            if filename.ok:
+                track.location.string = quote(str(filename.path))
 
-            with working_directory(relative_to):
-                ok = filepath.is_file() and filepath.exists()
+            results[track.location.string] = filename.status
 
-            if not ok :
-                result = 'Not Found'
-                options = list(Path(search_in).rglob(filepath.name.strip()))
-                if options:
-                    result = 'Fixed'
-                    option = options[0]
-                    new_location = option.absolute()
-                    if try_relative_to:
-                        new_location_lst = list(new_location.parts)
-                        relative_to_lst = list(relative_to.parts)
-                        while new_location_lst and relative_to_lst:
-                            if new_location_lst[0]==relative_to_lst[0]:
-                                new_location_lst.pop(0)
-                                relative_to_lst.pop(0)
-                            else:
-                                break
-                        new_location_lst = ['..' for x in relative_to_lst] + new_location_lst
-                        new_location = Path(*new_location_lst)
-                    new_location = quote(str(new_location))
-                    track.location.string = new_location
-            results[track.location.string] = result
         summary = self.get_summary()
 
         for t in summary:
@@ -334,50 +395,57 @@ def cli(files, show_version=False, show=False, overwrite=False, report=False):
     
     found = False
     duration = timedelta(0)
+    count = 0
     for filename in filename_list:
+        
         ok = True
+        
         try:
             pl = Playlist(filename)
         except ValueError as e:
             ok = False
-        if ok:
-            found = True
+        
+        if not ok:
+            continue
 
-            if len(filename_list)>1 and (not(report) or (report and show)):
-                print(f"File: {filename}")
-                print('======' + ('=' * len(filename)))
+        found = True
+        count += 1
 
-            if report:
-                report_file = pl.make_report_file()
+        if len(filename_list)>1 and (not(report) or (report and show)):
+            print(f"File: {filename}")
+            print('======' + ('=' * len(filename)))
 
-            if show:
-                summary = pl.get_summary()
-                for d in [x['duration'] for x in summary]:
-                    duration += d
-                print(pl.make_pretty_summary(summary))
+        if report:
+            report_file = pl.make_report_file()
 
-            if report:
-                print(f'Report file: {report_file}')
-                if len(filename_list)>1 and show:
-                    print('')
-
-            if show or report:
-                continue
-
-            pl.fix_titles()
-            summary = pl.fix_location()
+        if show:
+            summary = pl.get_summary()
             for d in [x['duration'] for x in summary]:
                 duration += d
             print(pl.make_pretty_summary(summary))
 
-            if overwrite:
-                pl.dump_to_file()
+        if report:
+            print(f'Report file: {report_file}')
+            if len(filename_list)>1 and show:
+                print('')
+
+        if show or report:
+            continue
+
+        pl.fix_titles()
+        summary = pl.fix_location()
+        for d in [x['duration'] for x in summary]:
+            duration += d
+        print(pl.make_pretty_summary(summary))
+
+        if overwrite:
+            pl.dump_to_file()
 
     if not found:
         raise ClickException('No file found.')
 
     if duration and len(filename_list)>1:
-        print(f"Number of files: ............... {len(filename_list)}")
+        print(f"Number of files: ............... {count}")
         print(f"Total duration of all files: ... {Playlist.timedelta_to_string(duration)}")
         print('')
 

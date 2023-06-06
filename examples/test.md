@@ -13,5 +13,5 @@ Total duration: ... 10:32
 ```
 
 ---
-Report generated with [`xspf_fixup` (v0.9.3b1)](https://github.com/jbokser/xspf_fixup).
+Report generated with [`xspf_fixup` (v0.9.3b4)](https://github.com/jbokser/xspf_fixup).
 
