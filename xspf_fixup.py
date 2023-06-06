@@ -11,7 +11,7 @@ from contextlib import contextmanager
 from warnings import filterwarnings
 
 
-version='0.9.3b2'
+version='0.9.3b3'
 
 
 
@@ -135,8 +135,12 @@ class Playlist():
 
 
     @staticmethod
-    def location_to_string(l):
-        return unquote(l)
+    def location_to_string(l, remove_dot_slash=False):
+        out = unquote(l)
+        if remove_dot_slash:
+            while out and out[0] in ['/', '.']:
+                out = out[1:]
+        return out
 
 
     def get_summary(self):
@@ -163,7 +167,8 @@ class Playlist():
                             keys = ['title', 'duration', 'location', 'result'],
                             more_headers = [],
                             more_keys=[],
-                            markdown=False):
+                            markdown=False,
+                            remove_dot_slash=False):
 
         headers += more_headers
         keys += more_keys
@@ -189,7 +194,8 @@ class Playlist():
                 if key=='result':
                     results[value] = results.get(value, 0) + 1
                 if key=='location':
-                    value=cls.location_to_string(value)
+                    value=cls.location_to_string(value,
+                        remove_dot_slash=remove_dot_slash)
                 if key=='duration':
                     if value:
                         total_duration += value
@@ -267,7 +273,8 @@ class Playlist():
             file_name_without_extension + ('.md' if markdown else '.txt'))
 
         summary = self.get_summary()
-        str_report = self.make_pretty_summary(summary, markdown=markdown)
+        str_report = self.make_pretty_summary(summary, markdown=markdown,
+                                              remove_dot_slash=True)
       
         with open(filename, "w") as file:
 
@@ -310,6 +317,12 @@ def cli(files, show_version=False, show=False, overwrite=False, report=False):
     if show_version:
         print(version)
         return
+    
+    if report:
+       overwrite = False
+
+    if overwrite:
+        show = False
 
     if not files:
         raise BadParameter('It is necessary to pass at least one file.')
@@ -330,7 +343,7 @@ def cli(files, show_version=False, show=False, overwrite=False, report=False):
         if ok:
             found = True
 
-            if len(filename_list)>1 and show:
+            if len(filename_list)>1 and (not(report) or (report and show)):
                 print(f"File: {filename}")
                 print('======' + ('=' * len(filename)))
 
