@@ -50,5 +50,5 @@ setup(
     ],
     python_requires='>=3.6',
     install_requires=requirements,
-    scripts=['xspf_fixup', 'xspf_fixup.py']
+    scripts=['xspf_fixup', 'xspf_fixup.py', 'to_xspf', 'to_xspf.py']
 )

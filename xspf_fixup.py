@@ -12,7 +12,7 @@ from warnings import filterwarnings
 from collections import namedtuple
 
 
-version='0.9.3b4'
+version='0.9.3b5'
 
 
 
@@ -38,18 +38,31 @@ def working_directory(path):
 class Playlist():
 
 
-    def __init__(self, filename):
+    def __init__(self, filename=None):
 
         self.filename = filename
-        content = []
 
-        with open(filename, "r") as file:
-            content = file.readlines()
+        if filename is None:
+            content = """
+                <playlist version="1" xmlns="http://xspf.org/ns/0/" xmlns:vlc="http://www.videolan.org/vlc/playlist/ns/0/">
+                  <title>Playlist</title>
+                  <trackList>
+                  </trackList>
+                  <extension application="http://www.videolan.org/vlc/playlist/0">
+                  </extension>
+                </playlist>            
+            """
+        else:
+            content = []
 
-        content = "".join(content)
+            with open(filename, "r") as file:
+                content = file.readlines()
+
+            content = "".join(content)
+        
         self.soup = BS(content, features="xml")
 
-        if not list(self.get_tracks()):
+        if filename and not list(self.get_tracks()):
             raise ValueError('Empty playlist or wrong format file')
 
 
@@ -130,8 +143,11 @@ class Playlist():
 
 
     def fix_filename(self, filename, try_relative_to=True, search_in='.'):
-
-        relative_to = Path(self.filename).absolute().parent
+        
+        if self.filename is None:
+            relative_to = Path('.').absolute()
+        else:
+            relative_to = Path(self.filename).absolute().parent
 
         filepath = Path(filename)
         status = 'Ok'
