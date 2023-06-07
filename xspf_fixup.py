@@ -12,7 +12,7 @@ from warnings import filterwarnings
 from collections import namedtuple
 
 
-version='0.9.3b5'
+version='0.9.3'
 
 
 
